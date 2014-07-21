@@ -9,6 +9,7 @@
 #require(plyr)
 #require(data.table)
 #require(gtools)
+require(ggplot2)
 
 # Import multiple csv files
 
@@ -37,7 +38,21 @@ CSVDataFrame<-do.call(rbind, lapply(filenames, read.csvfiles))
 
 #Sanity check: 148 good csv files (participants) with 120 rows and 45 columns --> 17760 rows x 45 columns
 dim(CSVDataFrame)
+head(CSVDataFrame)
 
-#Fix variables types: Specify factors, numeric, and string manually
+#Logistic regression plots; improper model b/c observation are repeated, not iid
+#Overall and by participant
+#Filter out practice
+# Final accuracy (fin_acc) by time pressure (time_pres)
+# Final accuracy (fin_acc) by final reaction time (RT4_fin)
+# Final accuracy (fin_acc) by number of alternative answers (num_alt)
+
+ggplot(CSVDataFrame, aes(x=time_pres, y= fin_acc)) + geom_point() + 
+  stat_smooth(method="glm", family="binomial", se=FALSE)
+
+boxplot(CSVDataFrame$fin_acc)
+outliers<-boxplot(CSVDataFrame$fin_acc)
+outliers$out
+
 
 
