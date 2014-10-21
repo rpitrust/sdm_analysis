@@ -51,3 +51,14 @@ ggplot(SDM_cleaned, aes(stars, fin_acc, group=factor(ProgID))) +
   stat_smooth(method="glm", family = "binomial", SE = F)
 
 
+ggplot(SDM_cleaned, aes(num_pts, fin_acc, color=factor(ProgID))) + geom_line() 
+
+ggplot(SDM_cleaned, aes(x=num_pts, y=fin_acc, colour=factor(ProgID))) + 
+  geom_line() +
+  stat_smooth(aes(y=fin_acc), method = "glm", family = "binomial", se=T)
+
+
+ggplot(SDM_cleaned, aes(x=num_pts, y=fin_acc)) + geom_line(aes(group=time_pres)) + 
+  stat_smooth(method="glm", family="binomial", se=TRUE)
+
+
