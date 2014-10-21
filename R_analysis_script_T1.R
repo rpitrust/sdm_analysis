@@ -49,3 +49,10 @@ hist(SDM_cleaned$fin_acc)
   ggplot(SDM_cleaned, aes(stars, fin_acc, group=factor(ProgID))) + 
     geom_point() +
     stat_smooth(method="glm", family = "binomial", SE = F)
+
+  ggplot(SDM_cleaned, aes(fin_conf, fin_acc, group=factor(ProgID))) + 
+    geom_point() +
+    stat_smooth(method="glm", family = "binomial", SE = F)
+
+
+
