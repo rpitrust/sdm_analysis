@@ -14,7 +14,7 @@ require(ggplot2)
 # Import multiple csv files
 
 ########## Change folder  ############################################################################
-#setwd("M:/R/T1_analysis/4.22.14_DATA")
+setwd("M:/R/T1_analysis/4.22.14_DATA")
 readinpath<-"M:/R/T1_analysis/4.22.14_DATA"
 
 #Create list of filenames w/the path specified above: 
@@ -36,23 +36,18 @@ read.csvfiles<-function(filenam)
 # #Bind files into a big data frame
 CSVDataFrame<-do.call(rbind, lapply(filenames, read.csvfiles))
 
-#Sanity check: 148 good csv files (participants) with 120 rows and 45 columns --> 17760 rows x 45 columns
+#Sanity check: 148 good csv files (participants) with 120 rows and 45 columns = 17760 rows x 45 columns
 dim(CSVDataFrame)
 head(CSVDataFrame)
 
-#Logistic regression plots; improper model b/c observation are repeated, not iid
-#Overall and by participant
-#Filter out practice
-# Final accuracy (fin_acc) by time pressure (time_pres)
-# Final accuracy (fin_acc) by final reaction time (RT4_fin)
-# Final accuracy (fin_acc) by number of alternative answers (num_alt)
+#Drop misspelled final answers, fin_acc = 9, but keep fin_acc = 0 or 1
+SDM_cleaned<-subset(CSVDataFrame, fin_acc!=9) #17390 rows
+hist(SDM_cleaned$fin_acc)
 
-ggplot(CSVDataFrame, aes(x=time_pres, y= fin_acc)) + geom_point() + 
-  stat_smooth(method="glm", family="binomial", se=FALSE)
-
-boxplot(CSVDataFrame$fin_acc)
-outliers<-boxplot(CSVDataFrame$fin_acc)
-outliers$out
-
+#Logistic regression plots
+#Final accuracy by stars
+ggplot(SDM_cleaned, aes(stars, fin_acc, group=factor(ProgID))) + 
+  geom_point() +
+  stat_smooth(method="glm", family = "binomial", SE = F)
 
 
