@@ -13,6 +13,7 @@
   require(MESS)
   require(MASS)
   require(RColorBrewer)
+  require(foreign)
 
 # Import multiple csv files
 
@@ -45,18 +46,22 @@
 
 #Drop misspelled final answers, fin_acc = 9, but keep fin_acc = 0 or 1
   SDM_cleaned<-subset(CSVDataFrame, fin_acc!=9) #17390 rows
-  hist(SDM_cleaned$fin_acc)
+  #hist(SDM_cleaned$fin_acc)
 
-#Subject switches to alt answer? Create new variable switch_to_alt (0 or 1)
+#Subject switches to alt answer? Create new variable switch_to_alt (0 or 1). 
   for(i in 1:length(SDM_cleaned[,1])) 
-      {if(SDM_cleaned$Alt1_ans[i]==SDM_cleaned$Fin_ans[i]) SDM_cleaned$Switch_to_alt[i]=1
-          else SDM_cleaned$Switch_to_alt[i]=0
-      }
+      {if (SDM_cleaned$num_alt[i]==1&&SDM_cleaned$Init_ans[i]!=SDM_cleaned$Fin_ans[i]) 
+          if(SDM_cleaned$Alt1_ans[i]==SDM_cleaned$Fin_ans[i])   SDM_cleaned$Switch_to_alt[i]=1
+       else SDM_cleaned$Switch_to_alt[i]=0
+       
+       if (SDM_cleaned$num_alt[i]==3&&SDM_cleaned$Init_ans[i]!=SDM_cleaned$Fin_ans[i])
+          if(SDM_cleaned$Alt1_ans[i]==SDM_cleaned$Fin_ans[i]||
+             SDM_cleaned$Alt2_ans[i]==SDM_cleaned$Fin_ans[i]||
+             SDM_cleaned$Alt3_ans[i]==SDM_cleaned$Fin_ans[i])   SDM_cleaned$Switch_to_alt[i]=1
+        else SDM_cleaned$Switch_to_alt[i]=0
+        }
   
-  #Need to check if initial answer equals alt? Only happens once, ignoring for now
-  #sum(SDM_cleaned$Init_ans==SDM_cleaned$Alt1_ans)
-  
-#Create probability the subject will switch to alt: Alt answer vs. Pop freq of initial answer vs
+#Create probability using pop freqs of alt answer - initial answer 
   SDM_cleaned$SubjectvAlt<- SDM_cleaned$Alt1_prop - SDM_cleaned$Init_prop 
   
 #Subset by number of alt answers (num_alt = 1 or 3) and time pressure (time_pres = 0 or 1)
@@ -67,6 +72,7 @@
     
 #Exploratory plots: Ordinary Least Squares (OLS) logistic regressions (assumes independent obs --> models are overfit)
 #Reproduce previous figures
+  
   #Create custom color palettes 
   BluePal<-mypalette<-brewer.pal(7,"Blues")
   GreenPal<-mypalette<-brewer.pal(7,"Greens")
@@ -76,37 +82,119 @@
   #Display custom palette
   #image(1:7,1,as.matrix(1:7),col=RedPal,xlab="Blues (sequential)",
   #      ylab="",xaxt="n",yaxt="n",bty="n")
-    
+  
+  #Customized minimal theme
+  custom_minimal_theme <- theme_minimal() + theme(text = element_text(size= 10), legend.position="none", 
+                                                  axis.text.x = element_text(size=rel(1.2)), axis.text.y = element_text(size=rel(1.2)))
+  #Change for the session: 
+    #theme_set(theme_grey(base_size = 18))                                                 
+  
   #Exp 1A
-  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-      stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + theme_minimal() + 
-      labs(title = "Exp1A", x = "Subject Answer Pop Freq vs Alt Answer Pop Freq", y = "Probability of Switching") +  scale_colour_gradientn(colours=BluePal)
-  
+  p1 <- ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+          geom_smooth(method = 'glm', family = 'binomial', se = FALSE) +     custom_minimal_theme + 
+          labs(title = "Exp1A: One Alt under no Time Pressure", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
+          scale_colour_gradientn(colours=BluePal) 
+      
   #Exp 1B
-  ggplot(Exp1B, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + theme_minimal() + 
-    labs(title = "Exp1B", x = "Subject Answer Pop Freq vs Alt Answer Pop Freq", y = "Probability of Switching") +  scale_colour_gradientn(colours=GreenPal)
-  
+  p2 <- ggplot(Exp1B, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+          stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + custom_minimal_theme  + 
+          labs(title = "Exp1B: One Alt under Time Pressue", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
+          scale_colour_gradientn(colours=OrangePal)
+    
   #Exp 1C
-  ggplot(Exp1C, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + theme_minimal() + 
-    labs(title = "Exp1C", x = "Subject Answer Pop Freq vs Alt Answer Pop Freq", y = "Probability of Switching") +  scale_colour_gradientn(colours=OrangePal)
   
+  p3 <- ggplot(Exp1C, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+          stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + custom_minimal_theme  + 
+          labs(title = "Exp1C: Three Alt under no Time Pressure", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
+          scale_colour_gradientn(colours=GreenPal)
+    
   #Exp 1D
-  ggplot(Exp1D, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + theme_minimal() + 
-    labs(title = "Exp1D", x = "Subject Answer Pop Freq vs Alt Answer Pop Freq", y = "Probability of Switching") +  scale_colour_gradientn(colours=PurplePal)
-
+  p4 <- ggplot(Exp1D, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+      stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + custom_minimal_theme  + 
+      labs(title = "Exp1D: Three Alt under Time Pressure", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
+      scale_colour_gradientn(colours=PurplePal)
+   
+  #######Note curves do not extrapolate beyond data###### 
+    
+  # Multiple plot function
+  # Source: http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_%28ggplot2%29/
+  # ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+  # - cols:   Number of columns in layout
+  # - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+  #
+  # If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+  # then plot 1 will go in the upper left, 2 will go in the upper right, and
+  # 3 will go all the way across the bottom.
+  #
+  multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+    require(grid)
+    
+    # Make a list from the ... arguments and plotlist
+    plots <- c(list(...), plotlist)
+    
+    numPlots = length(plots)
+    
+    # If layout is NULL, then use 'cols' to determine layout
+    if (is.null(layout)) {
+      # Make the panel
+      # ncol: Number of columns of plots
+      # nrow: Number of rows needed, calculated from # of cols
+      layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                       ncol = cols, nrow = ceiling(numPlots/cols))
+    }
+    
+    if (numPlots==1) {
+      print(plots[[1]])
+      
+    } else {
+      # Set up the page
+      grid.newpage()
+      pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+      
+      # Make each plot, in the correct location
+      for (i in 1:numPlots) {
+        # Get the i,j matrix positions of the regions that contain this subplot
+        matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+        
+        print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                        layout.pos.col = matchidx$col))
+      }
+    }
+  }
+  
+  multiplot(p1, p2, p3, p4, cols = 2)
+  
+  #write.csv(SDM_cleaned, file = "SDM_cleaned.csv")
+  
+  #Example ggplot figure 
+  #     ggplot(ChickWeight, aes(x=Time, y=weight, colour=Diet, group=Chick)) +
+  #       geom_line() +
+  #       ggtitle("Growth curve for individual chicks")
+      
+  
 #To-do list
-  #Model fitting and comparison using lme4  
+  #Model comparison using lme4: 
+    #1. Start with Probability of Switching as the DV
+    #2. Accuracy as DV. Factors: Probability of Switching, Pop frequency, RT, category, question difficulty, confidence, self-reported expertise
   #Infer expertise based on titration? Self-reported confidence?
   #Switching behavior using decision trees?
   
   
   
 ##########################Old code########################################################################
+  #GLM by participant: http://stackoverflow.com/questions/2970443/break-dataframe-into-subsets-by-factor-values-send-to-function-that-returns-glm  
+  #listomodels<-dlply(Exp1A, .(ProgID), function(ProgID) glm(Switch_to_alt~SubjectvAlt, family=binomial(logit), data=Exp1A, subset=ProgID==ProgID))
+  
+  
+  
+  
+  
+  
   ggplot(Exp1A,aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    geom_line(aes(group=ProgID)) +
+    geom_line(aes(group=ProgID, group = ProgID))
+  
+  
+  +
     facet_grid(~TargetSize) + theme_minimal() +
     theme(panel.border = element_rect(fill = NA))
   
@@ -115,10 +203,35 @@
     geom_line(aes(group=Subject))
   
   
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+    geom_line(aes(y=predict(Exp1AOvervall), group = ProgID))
   
   
-  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A)
-  PredAlt1Overall<-predict(alt1Overvall)
+  
+  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A) 
+  
+  unique(Exp1A$ProgID)
+  length(Exp1A$ProgID)
+  
+  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A , subset=ProgID==605)
+  Create list of concatanated models?
+  
+  
+  PredAlt1Overall<-predict(Exp1AOvervall)
+  
+  ggplot(Exp1,aes(Accuracy,EstRadPx, group = Subject, color = Subject)) +
+    geom_line(aes(group=Subject)) +
+    facet_grid(~TargetSize) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA))
+  
+  
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+    geom_line(aes(group = ProgID))
+  
+  
+  
+  
+
   
   ggplot(SDMalt1, aes(x = diff , y = fin_acc,color = ProgID)) + geom_point(position = position_jitter(w = 0.05, h=0.05)) + geom_line(aes(y = PredAlt1Overall))  +  theme_minimal()
   
