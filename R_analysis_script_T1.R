@@ -63,6 +63,11 @@
   
 #Create probability using pop freqs of alt answer - initial answer 
   SDM_cleaned$SubjectvAlt<- SDM_cleaned$Alt1_prop - SDM_cleaned$Init_prop 
+
+#Calculate total RT; rescale by dividing by 1000 so model estimation will converge
+  SDM_cleaned$TotalRT<-(as.numeric(SDM_cleaned$RT1_keypress) + as.numeric(SDM_cleaned$RT2_Entr) + as.numeric(SDM_cleaned$RT3_conf) + 
+                       as.numeric(SDM_cleaned$Alt1_RT) + as.numeric(SDM_cleaned$Alt2_RT) +
+                       as.numeric(SDM_cleaned$Alt3_RT) + as.numeric(SDM_cleaned$RT4_fin))/1000
   
 #Subset by number of alt answers (num_alt = 1 or 3) and time pressure (time_pres = 0 or 1)
   Exp1A<-subset(SDM_cleaned, num_alt==1&time_pres==0)
@@ -165,92 +170,28 @@
   multiplot(p1, p2, p3, p4, cols = 2)
   
   #write.csv(SDM_cleaned, file = "SDM_cleaned.csv")
-  
-  #Example ggplot figure 
-  #     ggplot(ChickWeight, aes(x=Time, y=weight, colour=Diet, group=Chick)) +
-  #       geom_line() +
-  #       ggtitle("Growth curve for individual chicks")
-      
-  
-#To-do list
-  #Model comparison using lme4: 
-    #1. Start with Probability of Switching as the DV
-    #2. Accuracy as DV. Factors: Probability of Switching, Pop frequency, RT, category, question difficulty, confidence, self-reported expertise
-  #Infer expertise based on titration? Self-reported confidence?
-  #Switching behavior using decision trees?
-  
-  
-  
-##########################Old code########################################################################
-  #GLM by participant: http://stackoverflow.com/questions/2970443/break-dataframe-into-subsets-by-factor-values-send-to-function-that-returns-glm  
-  #listomodels<-dlply(Exp1A, .(ProgID), function(ProgID) glm(Switch_to_alt~SubjectvAlt, family=binomial(logit), data=Exp1A, subset=ProgID==ProgID))
-  
-  
-  
-  
-  
-  
-  ggplot(Exp1A,aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    geom_line(aes(group=ProgID, group = ProgID))
-  
-  
-  +
-    facet_grid(~TargetSize) + theme_minimal() +
-    theme(panel.border = element_rect(fill = NA))
-  
-  
-  ggplot(Exp1,aes(Accuracy,EstRadPx, group = Subject, color = Subject)) +
-    geom_line(aes(group=Subject))
-  
-  
-  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    geom_line(aes(y=predict(Exp1AOvervall), group = ProgID))
-  
-  
-  
-  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A) 
-  
-  unique(Exp1A$ProgID)
-  length(Exp1A$ProgID)
-  
-  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A , subset=ProgID==605)
-  Create list of concatanated models?
-  
-  
-  PredAlt1Overall<-predict(Exp1AOvervall)
-  
-  ggplot(Exp1,aes(Accuracy,EstRadPx, group = Subject, color = Subject)) +
-    geom_line(aes(group=Subject)) +
-    facet_grid(~TargetSize) + theme_minimal() +
-    theme(panel.border = element_rect(fill = NA))
-  
-  
-  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
-    geom_line(aes(group = ProgID))
-  
-  
-  
-  
 
+# Generalized Linear Mixed-Effects Models (GLMM)
+  # Exp 1A
+  # Null Model: DV = swtich to alt, Random Effect Intercept of Subject
+  Exp1ANullModel<-glmer(Switch_to_alt ~ SubjectvAlt + (1 | ProgID), family = binomial, data = Exp1A)
+  yFE.Exp1ANullModel<-predict(Exp1ANullModel, type = "response", re.form = ~0)
   
-  ggplot(SDMalt1, aes(x = diff , y = fin_acc,color = ProgID)) + geom_point(position = position_jitter(w = 0.05, h=0.05)) + geom_line(aes(y = PredAlt1Overall))  +  theme_minimal()
+  yFull.Exp1ANullModel<-predict(Exp1ANullModel, type = "response")
+  yFull<-fitted(Exp1ANullModel)
+  
+  #Fixef plot: Group level  
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt)) + 
+    geom_line(aes(y =  yFE.Exp1ANullModel)) 
+   
+  #Plot with individuals
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group=ProgID, color = ProgID)) + 
+    geom_point() + geom_line(aes(y = yFull)) +
+    theme_minimal() +
+    theme(panel.border = element_rect(fill = NA)) 
   
   
-  x = SubjectvAlt y = 
-  
-  
-  
-  plogis(Alt1logistic)
-  
-  ggplot(SDMalt1, aes(x = diff , y = fin_acc, group=ProgID,
-                   color = ProgID)) + geom_point(position = position_jitter(w = 0.05, h=0.05)) + geom_line(aes(y = PredAlt1Overall))  +  theme_minimal()
-    
-  
-  
-  facet_grid(~TargetSize) +
-
-
-    
+ 
     
     
     
@@ -359,4 +300,132 @@ ggplot(SDMalt1, aes(x=fin_conf,y=fin_acc)) +
           #Check for response compression; use z-score?
 
       #Probability of switching answers
-
+  
+  #Model 1: + Random effect of SubjectvAlt
+  Exp1AlModel1<-glmer(Switch_to_alt ~ SubjectvAlt + (1| ProgID), family = binomial, data = Exp1A)
+  predict(Exp1AlModel1, type = "response")
+  
+  
+  Exp1AlModel1<-glmer(Switch_to_alt ~ SubjectvAlt + (1 + SubjectvAlt| ProgID), family = binomial, data = Exp1A)
+  
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group=ProgID,
+                    color = ProgID)) + geom_point() + geom_line(aes(y = predict(Exp1AlModel1, type = "response"), re.form = 0)) +
+    facet_grid(~Q_cat_ID) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA))
+  
+  
+  
+  ggplot(Exp1A, aes(x = TotalRT, y = fin_acc, group=ProgID, color = ProgID)) + 
+    geom_point() + geom_line(aes(y = preds_overall)) +
+    facet_grid(~Q_cat_ID) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA)) 
+  
+  # Exp 1A
+  # Null Model: DV = final accuracy, Random Effect Intercept of Subject
+  Exp1ANullModel<-glmer(fin_acc ~ (1 | ProgID), family = binomial, data = Exp1A)
+  
+  #Model 1: +Fixed effect of switch to alt answer 
+  Exp1AModel1<-glmer(fin_acc ~ Switch_to_alt + (1 | ProgID), family = binomial, data = Exp1A)
+  
+  #Model 2: +Random effect of Total RT 
+  Exp1AModel2<-glmer(fin_acc ~ Switch_to_alt + (1 + TotalRT | ProgID), family = binomial, data = Exp1A)
+  #coef(Exp1AModel2)  
+  #Compare model fits
+  anova(Exp1ANullModel,Exp1AModel1, Exp1AModel2)
+  
+  #Graph Model 1
+  Exp1A$preds_overall <- predict(Exp1AModel1, re.form = ~0)
+  
+  ggplot(Exp1A, aes(x = TotalRT, y = fin_acc, group=ProgID, color = ProgID)) + 
+    geom_point() + geom_line(aes(y = preds_overall)) +
+    facet_grid(~Q_cat_ID) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA))
+  
+  #Example ggplot figure 
+  #     ggplot(ChickWeight, aes(x=Time, y=weight, colour=Diet, group=Chick)) +
+  #       geom_line() +
+  #       ggtitle("Growth curve for individual chicks")
+  
+  
+  #To-do list
+  #Model comparison using lme4: 
+  #1. Start with Probability of Switching as the DV?
+  #2. Accuracy as DV. Factors: Probability of Switching, Pop frequency, RT, category, question difficulty, confidence, self-reported expertise
+  #Infer expertise based on titration? Self-reported confidence?
+  #Switching behavior using decision trees?
+  
+  
+  
+  
+  
+  
+  ##########################Old code########################################################################
+  #GLM by participant: http://stackoverflow.com/questions/2970443/break-dataframe-into-subsets-by-factor-values-send-to-function-that-returns-glm  
+  #listomodels<-dlply(Exp1A, .(ProgID), function(ProgID) glm(Switch_to_alt~SubjectvAlt, family=binomial(logit), data=Exp1A, subset=ProgID==ProgID))
+  
+  
+  
+  
+  
+  
+  ggplot(Exp1A,aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+    geom_line(aes(group=ProgID, group = ProgID))
+  
+  
+  +
+    facet_grid(~TargetSize) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA))
+  
+  
+  ggplot(Exp1,aes(Accuracy,EstRadPx, group = Subject, color = Subject)) +
+    geom_line(aes(group=Subject))
+  
+  
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+    geom_line(aes(y=predict(Exp1AOvervall), group = ProgID))
+  
+  
+  
+  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A) 
+  
+  unique(Exp1A$ProgID)
+  length(Exp1A$ProgID)
+  
+  Exp1AOvervall<-glm(Switch_to_alt ~SubjectvAlt, family=binomial(logit), data =  Exp1A , subset=ProgID==605)
+  Create list of concatanated models?
+  
+  
+  PredAlt1Overall<-predict(Exp1AOvervall)
+  
+  ggplot(Exp1,aes(Accuracy,EstRadPx, group = Subject, color = Subject)) +
+    geom_line(aes(group=Subject)) +
+    facet_grid(~TargetSize) + theme_minimal() +
+    theme(panel.border = element_rect(fill = NA))
+  
+  
+  ggplot(Exp1A, aes(x = SubjectvAlt, y = Switch_to_alt, group = ProgID, color = ProgID)) +
+    geom_line(aes(group = ProgID))
+  
+  
+  
+  
+  
+  
+  ggplot(SDMalt1, aes(x = diff , y = fin_acc,color = ProgID)) + geom_point(position = position_jitter(w = 0.05, h=0.05)) + geom_line(aes(y = PredAlt1Overall))  +  theme_minimal()
+  
+  
+  x = SubjectvAlt y = 
+    
+    
+    
+    plogis(Alt1logistic)
+  
+  ggplot(SDMalt1, aes(x = diff , y = fin_acc, group=ProgID,
+                      color = ProgID)) + geom_point(position = position_jitter(w = 0.05, h=0.05)) + geom_line(aes(y = PredAlt1Overall))  +  theme_minimal()
+  
+  
+  
+  facet_grid(~TargetSize) +
+    
+    
+    
