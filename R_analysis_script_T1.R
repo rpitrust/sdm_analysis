@@ -68,6 +68,7 @@
             else SDM_cleaned$Switch_to_alt[i]=0
         }
   
+<<<<<<< HEAD
   for(i in 1:length(SDM_cleaned[,1]))    
          {if(SDM_cleaned$num_alt[i]==3&&SDM_cleaned$Init_ans[i]!=SDM_cleaned$Fin_ans[i])
               if(SDM_cleaned$Alt1_ans[i]==SDM_cleaned$Fin_ans[i]||
@@ -97,6 +98,12 @@
        
  
 #Calculate total RT; rescale by dividing by 1000 so GLMM models converge
+=======
+#Create probability using pop freqs of alt answer - initial answer 
+  SDM_cleaned$SubjectvAlt<- SDM_cleaned$Alt1_prop - SDM_cleaned$Init_prop 
+
+#Calculate total RT; rescale by dividing by 1000 so model estimation will converge
+>>>>>>> ebb461272cec0d9d578858ba180959204d1801f5
   SDM_cleaned$TotalRT<-(as.numeric(SDM_cleaned$RT1_keypress) + as.numeric(SDM_cleaned$RT2_Entr) + as.numeric(SDM_cleaned$RT3_conf) + 
                        as.numeric(SDM_cleaned$Alt1_RT) + as.numeric(SDM_cleaned$Alt2_RT) +
                        as.numeric(SDM_cleaned$Alt3_RT) + as.numeric(SDM_cleaned$RT4_fin))/1000
@@ -150,7 +157,8 @@
       stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + custom_minimal_theme  + 
       labs(title = "Exp1D: Three Alt under Time Pressure", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
       scale_colour_gradientn(colours=PurplePal)
-   
+ 
+  
   #######Note curves do not extrapolate beyond data###### 
     
   # Multiple plot function
@@ -199,6 +207,7 @@
     }
   }
   
+<<<<<<< HEAD
 multiplot(p1, p2, p3, p4, cols = 2)
   
   #write.csv(SDM_cleaned, file = "1.21.2015.SDM_cleaned.csv")
@@ -214,6 +223,12 @@ multiplot(p1, p2, p3, p4, cols = 2)
   length(unique(Exp1C[,2])) #31
   length(unique(Exp1D[,2])) #32
   
+=======
+  multiplot(p1, p2, p3, p4, cols = 2)
+  
+  #write.csv(SDM_cleaned, file = "SDM_cleaned.csv")
+
+>>>>>>> ebb461272cec0d9d578858ba180959204d1801f5
 # Generalized Linear Mixed-Effects Models (GLMM)
   # Exp 1A
   # Null Model: DV = swtich to alt, Random Effect Intercept of Subject
