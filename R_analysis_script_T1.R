@@ -1,5 +1,5 @@
 # Jon's R code for T1 analysis
-# Last updated 1/21/2015
+# Last updated 1/22/2015
 # R version 3.1.2 
 # RStudio Version 0.98.1091
 # Zip file: Complete SDM2.1_1.20.15.zip
@@ -47,10 +47,11 @@
 
   
 #Create unique ID
-  UniqueID<-rep(1:123, each=162)
+  UniqueID<-rep(1:162, each=123)
   CSVDataFrame<-cbind(CSVDataFrame, UniqueID)  
   
- #Drop misspelled final answers, fin_acc = 9, but keep fin_acc = 0 or 1
+ 
+  #Drop misspelled final answers, fin_acc = 9, but keep fin_acc = 0 or 1
   SDM_cleaned<-subset(CSVDataFrame, fin_acc!=9) #XYZ rows
   #hist(SDM_cleaned$fin_acc)
 
@@ -68,6 +69,7 @@
             else SDM_cleaned$Switch_to_alt[i]=0
         }
   
+
   for(i in 1:length(SDM_cleaned[,1]))    
          {if(SDM_cleaned$num_alt[i]==3&&SDM_cleaned$Init_ans[i]!=SDM_cleaned$Fin_ans[i])
               if(SDM_cleaned$Alt1_ans[i]==SDM_cleaned$Fin_ans[i]||
@@ -96,7 +98,12 @@
     }
        
  
-#Calculate total RT; rescale by dividing by 1000 so GLMM models converge
+
+  
+#Create probability using pop freqs of alt answer - initial answer 
+  SDM_cleaned$SubjectvAlt<- SDM_cleaned$Alt1_prop - SDM_cleaned$Init_prop 
+
+#Calculate total RT; rescale by dividing by 1000 so model estimation will converge
   SDM_cleaned$TotalRT<-(as.numeric(SDM_cleaned$RT1_keypress) + as.numeric(SDM_cleaned$RT2_Entr) + as.numeric(SDM_cleaned$RT3_conf) + 
                        as.numeric(SDM_cleaned$Alt1_RT) + as.numeric(SDM_cleaned$Alt2_RT) +
                        as.numeric(SDM_cleaned$Alt3_RT) + as.numeric(SDM_cleaned$RT4_fin))/1000
@@ -106,7 +113,13 @@
   Exp1B<-subset(SDM_cleaned, num_alt==1&time_pres==1)
   Exp1C<-subset(SDM_cleaned, num_alt==3&time_pres==0)
   Exp1D<-subset(SDM_cleaned, num_alt==3&time_pres==1)
-    
+      
+  #Number of SS
+    #length(unique(Exp1A[,47])) #39
+    #length(unique(Exp1B[,47])) #41
+    #length(unique(Exp1C[,47])) #40
+    #length(unique(Exp1D[,47])) #42
+  
 #Exploratory plots: Ordinary Least Squares (OLS) logistic regressions (assumes independent obs --> models are overfit)
 #Reproduce previous figures
   
@@ -150,7 +163,8 @@
       stat_smooth(method = 'glm', family = 'binomial', se = FALSE) + custom_minimal_theme  + 
       labs(title = "Exp1D: Three Alt under Time Pressure", x = "Population Frequency: Alt - Subject", y = "Probability of Switching") +
       scale_colour_gradientn(colours=PurplePal)
-   
+ 
+  
   #######Note curves do not extrapolate beyond data###### 
     
   # Multiple plot function
@@ -199,21 +213,112 @@
     }
   }
   
+
 multiplot(p1, p2, p3, p4, cols = 2)
   
   #write.csv(SDM_cleaned, file = "1.21.2015.SDM_cleaned.csv")
 
-#Logistic regressions
-  for (unique(UniqueID$SDM_cleaned))
-  glm(Switch_to_alt~SubjectvAlt,data=SDM_cleaned,family=binomial())
- 
+#Logistic regressions by individual
 
-  #Number of SS
-  length(unique(Exp1A[,2])) #33 
-  length(unique(Exp1B[,2])) #34
-  length(unique(Exp1C[,2])) #31
-  length(unique(Exp1D[,2])) #32
   
+#1A
+  SsExp1A<-data.frame(unique(Exp1A$UniqueID))
+  Exp1ACoef<-data.frame(matrix(ncol=7,nrow=length(SsExp1A)))
+  colnames(Exp1ACoef)<-c("Exp","ProgID", "UniqueID", "Intercept", "Slope", "PSE", "Threshold")
+  for (i in 1:length(unique(Exp1A$UniqueID))) 
+    {Exp1Atemp<-subset(Exp1A, UniqueID==SsExp1A[i,])
+    testm<-glm(Switch_to_alt~SubjectvAlt,data=Exp1Atemp,family=binomial())
+    tempcoef<-coef(testm)
+    PSE<-(log(0.5)-tempcoef[1])/tempcoef[2]
+    Threshold<-(log(0.75)-tempcoef[1])/tempcoef[2]
+    Exp1ACoef[i,]<-c("1A",unique(Exp1Atemp$ProgID), unique(Exp1Atemp$UniqueID), tempcoef, PSE, Threshold)
+    }
+  
+#1B
+  SsExp1B<-data.frame(unique(Exp1B$UniqueID))
+  Exp1BCoef<-data.frame(matrix(ncol=7,nrow=length(SsExp1B)))
+  colnames(Exp1BCoef)<-c("Exp","ProgID", "UniqueID", "Intercept", "Slope", "PSE", "Threshold")
+  for (i in 1:length(unique(Exp1B$UniqueID))) 
+  {Exp1Btemp<-subset(Exp1B, UniqueID==SsExp1B[i,])
+   testm<-glm(Switch_to_alt~SubjectvAlt,data=Exp1Btemp,family=binomial())
+   tempcoef<-coef(testm)
+   PSE<-(log(0.5)-tempcoef[1])/tempcoef[2]
+   Threshold<-(log(0.75)-tempcoef[1])/tempcoef[2]
+   #print(tempcoef)
+   Exp1BCoef[i,]<-c("1B", unique(Exp1Btemp$ProgID), unique(Exp1Btemp$UniqueID), tempcoef, PSE, Threshold)
+   #print(SsExp1B[i,])
+  }
+  
+#1C
+  SsExp1C<-data.frame(unique(Exp1C$UniqueID))
+  Exp1CCoef<-data.frame(matrix(ncol=7,nrow=length(SsExp1C)))
+  colnames(Exp1CCoef)<-c("Exp","ProgID", "UniqueID", "Intercept", "Slope", "PSE", "Threshold")
+  for (i in 1:length(unique(Exp1C$UniqueID))) 
+  {Exp1Ctemp<-subset(Exp1C, UniqueID==SsExp1C[i,])
+   testm<-glm(Switch_to_alt~SubjectvAlt,data=Exp1Ctemp,family=binomial())
+   tempcoef<-coef(testm)
+   PSE<-(log(0.5)-tempcoef[1])/tempcoef[2]
+   Threshold<-(log(0.75)-tempcoef[1])/tempcoef[2]
+   #print(tempcoef)
+   Exp1CCoef[i,]<-c("1C",unique(Exp1Ctemp$ProgID), unique(Exp1Ctemp$UniqueID), tempcoef, PSE, Threshold)
+   #print(SsExp1C[i,])
+  }
+  
+#1D
+  SsExp1D<-data.frame(unique(Exp1D$UniqueID))
+  Exp1DCoef<-data.frame(matrix(ncol=7,nrow=length(SsExp1D)))
+  colnames(Exp1DCoef)<-c("Exp","ProgID", "UniqueID", "Intercept", "Slope", "PSE", "Threshold")
+  for (i in 1:length(unique(Exp1D$UniqueID))) 
+  {Exp1Dtemp<-subset(Exp1D, UniqueID==SsExp1D[i,])
+   testm<-glm(Switch_to_alt~SubjectvAlt,data=Exp1Dtemp,family=binomial())
+   tempcoef<-coef(testm)
+   PSE<-(log(0.5)-tempcoef[1])/tempcoef[2]
+   Threshold<-(log(0.75)-tempcoef[1])/tempcoef[2]
+   #print(tempcoef)
+   Exp1DCoef[i,]<-c("1D",unique(Exp1Dtemp$ProgID), unique(Exp1Dtemp$UniqueID), tempcoef, PSE, Threshold)
+   #print(SsExp1D[i,])
+  }
+  
+  
+  ExpCoefs<-rbind(Exp1ACoef,Exp1BCoef, Exp1CCoef, Exp1DCoef)
+  
+      
+  
+  ExpCoefs[,5]
+  OR<-exp(as.numeric(ExpCoefs[,5])
+  
+          ExpCoefs<-cbind(ExpCoefs,OR)
+  
+  
+  write.csv(ExpCoefs, file = "ExpCoefs.csv")
+  
+  
+  #To-dos
+  #Write a fct to do the logistic regs by SS:
+  function(uniqueSs, dataset) {}
+  
+#1B
+  
+  
+  
+
+    
+    
+    print(unique(Exp1A$UniqueID[i])) 
+    
+  for(i in 1:length(SDM_cleaned[,1])) 
+
+    testm<-glm(Switch_to_alt~SubjectvAlt,data=(Exp1A$UniqueID==1),family=binomial())
+ coef(testm)
+
+
+  
+=======
+  multiplot(p1, p2, p3, p4, cols = 2)
+  
+  #write.csv(SDM_cleaned, file = "1.21.15.SDM_cleaned.csv")
+
+
 # Generalized Linear Mixed-Effects Models (GLMM)
   # Exp 1A
   # Null Model: DV = swtich to alt, Random Effect Intercept of Subject
