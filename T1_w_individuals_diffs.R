@@ -503,6 +503,8 @@ write.csv(ExpCoefsAll, file = "ExpCoefsAll.csv")
   colnames(oddsratio)<-"OR" 
 
   ExpCoefsAll<-cbind(ExpCoefsAll, alt, TimePressure, oddsratio)
+write.csv(ExpCoefsAll, file = "ExpCoefsAll.csv")
+  
 
 #Coefficients
   #Graphs
